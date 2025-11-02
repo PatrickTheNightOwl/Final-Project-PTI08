@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>150</height>
+   </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>600</width>
+    <height>150</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color:black;</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" name="currentusername">
+     <item>
+      <widget class="QWidget" name="currentusernamewidget" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,1,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="currentusername_title">
+          <property name="styleSheet">
+           <string notr="true">font:10pt;
+color:white;</string>
+          </property>
+          <property name="text">
+           <string>Current Username : </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="username_exist">
+          <property name="styleSheet">
+           <string notr="true">font:10pt;
+color:white;
+</string>
+          </property>
+          <property name="text">
+           <string>username</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>485</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="newusername">
+     <item>
+      <widget class="QWidget" name="newusernamewidget" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="newusername_title">
+          <property name="styleSheet">
+           <string notr="true">font:10pt;
+color:white;</string>
+          </property>
+          <property name="text">
+           <string>New Username : </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="username_input">
+          <property name="styleSheet">
+           <string notr="true">background-color: #ffffff;
+color: #000000;             
+border: 1px solid #666666;     
+border-radius:9px;
+padding: 8px;
+font-size: 14px;</string>
+          </property>
+          <property name="placeholderText">
+           <string>Enter your new username</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonlayout">
+     <property name="spacing">
+      <number>40</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="savebutton_username">
+       <property name="styleSheet">
+        <string notr="true">color:white;
+font:20pt;</string>
+       </property>
+       <property name="text">
+        <string>Save</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="cancelbutton_username">
+       <property name="styleSheet">
+        <string notr="true">color:white;
+font:20pt;</string>
+       </property>
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

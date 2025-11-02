@@ -1,0 +1,11 @@
+{
+    "ronaldo": {
+        "password": "$2b$12$y94/7rFDT1uzemgMsQ3BCevZtxcp4V6LLDiDxVZtBh8Mtww3d3T.y"
+    },
+    "messi": {
+        "password": "$2b$12$kG.uG.i1D8.kpZzomBcA3OgBkKMPrK0MHfmI3jh9.2p7rtT3TrELq"
+    },
+    "uia": {
+        "password": "$2b$12$pNqMbS0ZVXm4Mm/B1YD3J.c5WoNNznOmP9R8e/hnbWQxyNv/ij7iS"
+    }
+}
