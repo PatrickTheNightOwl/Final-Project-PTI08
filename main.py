@@ -169,16 +169,16 @@ class RegisterPage(QMainWindow) :
             return
         
         common_domain = [
-        "gmail.com","gmail.com.vn","yahoo.com",
-        "yahoo.com.vn","outlook.com","hotmail.com",
-        "live.com","icloud.com","proton.me",
-        "protonmail.com","aol.com","zoho.com",
-        "yandex.com","yandex.ru","outlook.com.vn",
-        "hotmail.com.vn"
+        "gmail.com","gmail.com.vn"
         ]
         has_domain = any(c in common_domain for c in gmail)
         has_atsign = any(c == "@" for c in gmail)
-
+        if not(has_domain and has_atsign) :
+            msg.setWindowTitle("Invalid gmail")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("Gmail must contain '@', and 'gmail.com'.")
+            msg.exec()
+            return
         
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         data[username] = {
