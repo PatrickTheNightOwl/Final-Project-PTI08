@@ -135,7 +135,7 @@ class RegisterPage(QMainWindow) :
         msg = QMessageBox()
         username = self.usernameinput.text()
         password = self.password_input.text()
-        gmail = self.gmail_input.text()
+        gmail = str(self.gmail_input.text())
         data = load_data()
 
         special_chars = "!@#$%^&*()_+-={[}]|\\:;\"'<>,.?/~`"
@@ -167,11 +167,23 @@ class RegisterPage(QMainWindow) :
             msg.setText("Password must contain letters, numbers, and special characters.")
             msg.exec()
             return
+        
+        common_domain = [
+        "gmail.com","gmail.com.vn","yahoo.com",
+        "yahoo.com.vn","outlook.com","hotmail.com",
+        "live.com","icloud.com","proton.me",
+        "protonmail.com","aol.com","zoho.com",
+        "yandex.com","yandex.ru","outlook.com.vn",
+        "hotmail.com.vn"
+        ]
+        has_domain = any(c in common_domain for c in gmail)
+        has_atsign = any(c == "@" for c in gmail)
 
+        
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         data[username] = {
             "password": hashed_password.decode('utf-8'),
-            "gmail" : gmail
+            "gmail" : gmail.lower()
         }
         save_data(data)
         msg.setWindowTitle("Register Success")
