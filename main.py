@@ -211,6 +211,7 @@ class MainPage(QMainWindow) :
         uic.loadUi("gui/Final_Project_PTI08_MainPage.ui",self)
         self.username = username
         self.password = password
+        self.gmail = gmail
         self.stackedWidget.setCurrentIndex(1) # đặt page của stackedWidget = 1 ( page giữa )
         self.SwitchToNutritions.clicked.connect(self.NutritionsPage)
         self.SwitchToNutritions.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -267,21 +268,25 @@ class MainPage(QMainWindow) :
     def HomePage(self) :
         self.stackedWidget.setCurrentIndex(1)
     def Settings(self) :
-        self.settingspage = Settings(self.username,self.password)
+        self.settingspage = Settings(self.username,self.password,)
         self.settingspage.show()
         self.close()
 class Settings(QDialog) :
-    def __init__(self,username,password):
+    def __init__(self,username,password,gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_SettingsPage.ui",self)
         self.username = username
         self.password = password
+        self.gmail = gmail
         self.editbutton.clicked.connect(self.EditUsername)
         self.editbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.editbutton_2.clicked.connect(self.EditPassword)
         self.editbutton_2.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.editbutton_3.clicked.connect(self.EditGmail)
+        self.editbutton_3.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.username_exist.setText(username)
         self.password_exist.setText(password)
+        self.gmail_exist.setText(gmail)
         self.gobackbutton.clicked.connect(self.GoBackHome)
         self.gobackbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.logoutbutton.clicked.connect(self.LogOut)
@@ -297,19 +302,24 @@ class Settings(QDialog) :
         self.mainpage = MainPage(self.username,self.password)
         self.mainpage.show()
     def EditUsername(self) :
-        self.editusername = EditUsername(self.username,self.password)
+        self.editusername = EditUsername(self.username,self.password,self.gmail)
         self.close()
         self.editusername.show()
     def EditPassword(self) :
-        self.editpassword = EditPassword(self.password,self.username)
+        self.editpassword = EditPassword(self.password,self.username,self.gmail)
         self.close()
         self.editpassword.show()
+    def EditGmail(self) :
+        self.editgmail = EditGmail(self.username,self.password,self.gmail)
+        self.close()
+        self.editgmail.show()
 class EditUsername(QDialog) :
-    def __init__(self,username,password):
+    def __init__(self,username,password,gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_EditUsernamePage.ui",self)
         self.username = username
         self.password = password
+        self.gmail = gmail
         self.username_exist.setText(username)
         if self.username_input.text() == "" :
             self.savebutton_username.setStyleSheet("color:#D3D3D3;font:20pt;")
@@ -322,7 +332,7 @@ class EditUsername(QDialog) :
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
     def GoBackToSettings(self) :
-        self.gobacksettings = Settings(self.username,self.password)
+        self.gobacksettings = Settings(self.username,self.password,self.gmail)
         self.gobacksettings.show()
         self.close()
     def SaveDataCheck(self) :
@@ -355,16 +365,17 @@ class EditUsername(QDialog) :
             msg.setIcon(QMessageBox.Icon.Information)
             msg.setText(f"Username changed to '{newusername}' successfully.")
             msg.exec()
-            self.mainpage = MainPage(newusername,self.password)
+            self.mainpage = MainPage(newusername,self.password,self.gmail)
             self.mainpage.show()
             self.close()
 class EditPassword(QDialog) :
-    def __init__(self,password,username):
+    def __init__(self,password,username,gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_EditPasswordPage.ui",self)
         self.password_exist.setText(password)
         self.username = username
         self.password = password
+        self.gmail = gmail
         if self.password_input.text() == "" :
             self.savebutton_password.setStyleSheet("color:#D3D3D3;font:20pt;")
         else :
@@ -376,7 +387,7 @@ class EditPassword(QDialog) :
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
     def GoBackSettings(self) :
-        self.gobacksettings = Settings(self.username,self.password)
+        self.gobacksettings = Settings(self.username,self.password,self.gmail)
         self.gobacksettings.show()
         self.close()
     def SaveDataCheck(self) :
@@ -404,16 +415,18 @@ class EditPassword(QDialog) :
             msg.setIcon(QMessageBox.Icon.Information)
             msg.setText(f"Password changed to '{newpassword}' successfully.")
             msg.exec()
-            self.settings = MainPage(self.username, newpassword)
+            self.settings = MainPage(self.username, newpassword, self.gmail)
             self.settings.show()
             self.close()
 class EditGmail(QDialog) :
-    def __init__(self,password,username):
+    def __init__(self,password,username,gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_EditGmailPage.ui",self)
-        self.password_exist.setText(password)
+        data = load_data()
+        self.gmail_exist.setText(self.gmail)
         self.username = username
         self.password = password
+        self.gmail = gmail
         if self.gmail_input.text() == "" :
             self.savebutton_gmail.setStyleSheet("color:#D3D3D3;font:20pt;")
         else :
@@ -427,7 +440,7 @@ class EditGmail(QDialog) :
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
     def GoBackSettings(self) :
-        self.gobacksettings = Settings(self.username,self.password)
+        self.gobacksettings = Settings(self.username,self.password,self.gmail)
         self.gobacksettings.show()
         self.close()
     def SaveDataCheck(self) :
