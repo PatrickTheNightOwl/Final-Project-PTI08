@@ -156,7 +156,7 @@ font:20pt;</string>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="delete_gmail_2">
+       <widget class="QPushButton" name="cancelbutton_gmail">
         <property name="styleSheet">
          <string notr="true">color:white;
 font:20pt;</string>
@@ -167,7 +167,7 @@ font:20pt;</string>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="delete_gmail">
+       <widget class="QPushButton" name="removebutton_gmail">
         <property name="styleSheet">
          <string notr="true">color:white;
 font:20pt;</string>

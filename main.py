@@ -179,7 +179,13 @@ class RegisterPage(QMainWindow) :
             msg.setText("Gmail must contain '@', and 'gmail.com'.")
             msg.exec()
             return
-        
+        for stored_username in data :
+            if stored_username["gmail"] == gmail :
+                msg.setWindowTitle("Invalid gmail")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setText("Gmail already exists.")
+                msg.exec()
+                return
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         data[username] = {
             "password": hashed_password.decode('utf-8'),
@@ -200,7 +206,7 @@ class RegisterPage(QMainWindow) :
             self.showhidepwbutton.setIcon(QIcon("gui/showpassword.png"))
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 class MainPage(QMainWindow) :
-    def __init__(self,username,password):
+    def __init__(self,username,password,gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_MainPage.ui",self)
         self.username = username
@@ -401,6 +407,80 @@ class EditPassword(QDialog) :
             self.settings = MainPage(self.username, newpassword)
             self.settings.show()
             self.close()
+class EditGmail(QDialog) :
+    def __init__(self,password,username):
+        super().__init__()
+        uic.loadUi("gui/Final_Project_PTI08_EditGmailPage.ui",self)
+        self.password_exist.setText(password)
+        self.username = username
+        self.password = password
+        if self.gmail_input.text() == "" :
+            self.savebutton_gmail.setStyleSheet("color:#D3D3D3;font:20pt;")
+        else :
+            self.savebutton_gmail.setStyleSheet("color:white;font:20pt")
+        self.savebutton_gmail.clicked.connect(self.SaveDataCheck)
+        self.savebutton_gmail.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.cancelbutton_gmail.clicked.connect(self.GoBackSettings)
+        self.cancelbutton_gmail.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.removebutton_gmail.clicked.connect(self.RemoveGmail)
+        self.removebutton_gmail.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setWindowTitle("TrainAnywhere")
+        self.setWindowIcon(QIcon("gui/decor3.ico"))
+    def GoBackSettings(self) :
+        self.gobacksettings = Settings(self.username,self.password)
+        self.gobacksettings.show()
+        self.close()
+    def SaveDataCheck(self) :
+        msg = QMessageBox()
+        data = load_data()
+        newgmail = self.gmail_input.text()
+        common_domain = [
+        "gmail.com","gmail.com.vn"
+        ]
+        has_domain = any(c in common_domain for c in newgmail)
+        has_atsign = any(c == "@" for c in newgmail)
+        if newgmail == "" :
+            msg.setWindowTitle("Invalid New Gmail")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("New gmail can't be blank")
+            msg.exec()
+        elif newgmail == data[self.username]["gmail"] :
+            msg.setWindowTitle("Invalid New Gmail")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("New gmail can't be same as current password!")
+            msg.exec()
+        elif not(has_domain and has_atsign) :
+            msg.setWindowTitle("Invalid new gmail")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("New Gmail must contain '@', and 'gmail.com'.")
+            msg.exec()
+        else :
+            for stored_username in data :
+                if stored_username == self.username :
+                    data[self.username]["gmail"] = newgmail
+                    break
+            save_data(data)
+            msg.setWindowTitle("Gmail Changed")
+            msg.setIcon(QMessageBox.Icon.Information)
+            msg.setText(f"Gmail changed to '{newgmail}' successfully.")
+            msg.exec()
+            self.settings = MainPage(self.username, self.password, newgmail)
+            self.settings.show()
+            self.close()
+    def RemoveGmail(self) :
+        msg = QMessageBox()
+        data = load_data()
+        for stored_username in data :
+            if stored_username == self.username :
+                stored_username["gmail"] = None
+        save_data(data)
+        msg.setWindowTitle("Gmail Removed")
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setText("Gmail has been removed successfully!")
+        msg.exec()
+        self.settings = MainPage(self.username, self.password, gmail=None)
+        self.settings.show()
+        self.close()
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
     register = RegisterPage()
