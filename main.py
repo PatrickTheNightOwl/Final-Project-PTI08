@@ -15,7 +15,7 @@ from video_loader import VideoLoader
 from smtp import generate_otp, send_otp
 #tạo hằng số file json
 class LoginPage(QMainWindow) :
-    def __init__(self,login_check=None):
+    def __init__(self,):
         super().__init__()
         base_dir = os.path.dirname(__file__)
         ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_LoginPage.ui")
@@ -111,7 +111,27 @@ class LoginPage(QMainWindow) :
     def OpenRegister(self) :
         self.close() # đóng login
         register.show() # mở register
-
+class VerifyOTP(QDialog) :
+    def __init__(self,otpcode,username,password,gmail):
+        super().__init__()
+        base_dir = os.path.dirname(__file__)
+        ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_VerifyOTP.ui")
+        uic.loadUi(ui_path,self)
+        self.otp = otpcode
+        self.verifybutton.clicked.connect(self.Verify)
+        self.username = username
+        self.password = password
+        self.gmail = gmail
+    def Verify(self) :
+        if self.otp_input.text() == self.otp :
+            msg = QMessageBox()
+            msg.setWindowTitle("Login successfully!")
+            msg.setText("Correct OTP code! Login Successfully! Enjoy your training time!")
+            msg.setIcon(QMessageBox.Icon.Information)
+            msg.exec()
+            self.close()
+            main = MainPage(self.username,self.password,self.gmail)
+            main.show()
 class RegisterPage(QMainWindow) :
     def __init__(self): 
         super().__init__()
@@ -168,7 +188,7 @@ class RegisterPage(QMainWindow) :
             msg.exec()
             return
         
-        for stored_username in data :
+        for stored_username in data.values() :
             if stored_username["gmail"] == gmail :
                 msg.setWindowTitle("Invalid gmail")
                 msg.setIcon(QMessageBox.Icon.Warning)
