@@ -22,22 +22,7 @@
   <property name="styleSheet">
    <string notr="true">background-color:black;</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,2">
-   <property name="spacing">
-    <number>0</number>
-   </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,0,5,0">
      <property name="spacing">
@@ -254,6 +239,87 @@ color:white;
         </item>
         <item>
          <widget class="QPushButton" name="editbutton_2">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>edit icon.png</normaloff>edit icon.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>50</width>
+            <height>90</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="usernamelayout_2">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QWidget" name="usernamewidget_2" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,0,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="gmail_title">
+          <property name="styleSheet">
+           <string notr="true">font:10pt;
+color:white;</string>
+          </property>
+          <property name="text">
+           <string>Gmail : </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="gmail_exist">
+          <property name="styleSheet">
+           <string notr="true">font:10pt;
+color:white;
+</string>
+          </property>
+          <property name="text">
+           <string>gmail</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>485</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="editbutton_3">
           <property name="text">
            <string/>
           </property>

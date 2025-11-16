@@ -168,17 +168,6 @@ class RegisterPage(QMainWindow) :
             msg.exec()
             return
         
-        common_domain = [
-        "gmail.com","gmail.com.vn"
-        ]
-        has_domain = any(c in common_domain for c in gmail)
-        has_atsign = any(c == "@" for c in gmail)
-        if not(has_domain and has_atsign) :
-            msg.setWindowTitle("Invalid gmail")
-            msg.setIcon(QMessageBox.Icon.Warning)
-            msg.setText("Gmail must contain '@', and 'gmail.com'.")
-            msg.exec()
-            return
         for stored_username in data :
             if stored_username["gmail"] == gmail :
                 msg.setWindowTitle("Invalid gmail")

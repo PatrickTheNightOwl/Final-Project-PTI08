@@ -11,8 +11,10 @@ def generate_otp() :
 
 def send_otp(receiver_email,username,otp) :
     server = smtplib.SMTP("smtp.gmail.com",587)
-    sender_email = "s"
+    sender_email = "myfamilyisatreasure@gmail.com"
     sender_password = os.getenv("EMAIL_PASSWORD")
+    if sender_password is None:
+        raise ValueError("EMAIL_PASSWORD chưa được thiết lập")
     server.starttls()
     server.login(sender_email,sender_password)
     
