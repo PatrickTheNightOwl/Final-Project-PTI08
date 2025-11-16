@@ -36,9 +36,7 @@ class LoginPage(QMainWindow) :
         msg = QMessageBox()
         username = self.username_input.text()
         password = self.password_input.text()
-        failed_attempt_otp = 0
-        otp_delay = 180000
-        otp_delay_in_minute = 3
+        
         failed_attempt_pw = 0
         pw_delay = 180000
         pw_delay_in_minute = 3
@@ -54,48 +52,53 @@ class LoginPage(QMainWindow) :
                     msg.setIcon(QMessageBox.Icon.Information)
                     msg.setText("Your OTP code has been sent to your gmail! ")
                     msg.exec()
-                    entered_otp = self.otp_input.text()
-                    if entered_otp == self.otp :
-                        msg.setWindowTitle("Login successfully!") 
-                        msg.setIcon(QMessageBox.Icon.Information)
-                        msg.setText("Correct OTP code! Login Successfully! Enjoy your training time!") # đăng nhập được thì thông báo
-                        msg.exec()
-                        self.close() # đóng login
-                        self.main = MainPage(username,password) # tạo main với tham số truyền vào là username ( để dùng ở main )
-                        self.main.show() # hiện main
-                    else :
-                        failed_attempt_otp += 1
-                        if (failed_attempt_otp // 3) > 1 :
-                            self.otp_input.setEnabled(False)
-                            otp_delay *= (failed_attempt_otp // 3)
-                            otp_delay_in_minute *= (failed_attempt_otp // 3)
-                            msg.setWindowTitle("Please Try Again Later")
-                            msg.setText(
-                                f"""
-                                You’ve entered the wrong password {failed_attempt_otp} times.
-                                Please wait {otp_delay_in_minute} minutes before trying again.
-
-                                """
-                            )
-                            msg.exec()
-                            QTimer.singleShot(otp_delay,lambda : self.otp_input.setEnabled(True))
-                        elif (failed_attempt_otp // 3) == 1 :
-                            self.otp_input.setEnabled(False)
-                            msg.setWindowTitle("Please Try Again Later")
-                            msg.setText(
-                                f"""
-                                You’ve entered the wrong password {failed_attempt_otp} times.
-                                Please wait {otp_delay_in_minute} minutes before trying again.
-
-                                """
-                            )
-                            msg.exec()
-                            QTimer.singleShot(otp_delay,lambda : self.otp_input.setEnabled(True))
+                    verify = VerifyOTP(self.otp,username,password,data[username]["gmail"])
+                else : 
+                    msg.setWindowTitle("Login successfully!")
+                    msg.setIcon(QMessageBox.Icon.Information)
+                    msg.setText("Login successfully! Enjoy your training time!")
+                    msg.exec()
+                    main = MainPage(username,password,None)
+                    self.close()
+                    main.show()
             else :
-                msg.setWindowTitle("Invalid Information") 
-                msg.setIcon(QMessageBox.Icon.Warning)
-                msg.setText("Wrong password!")
-                msg.exec()
+                failed_attempt_pw += 1
+                if (failed_attempt_pw // 3) > 1 :
+                    self.password_input.setEnabled(False)
+                    pw_delay *= (failed_attempt_pw // 3)
+                    pw_delay_in_minute *= (failed_attempt_pw // 3)
+                    msg.setWindowTitle("Please Try Again Later")
+                    msg.setText(
+                        f"""
+                        You’ve entered the wrong password {failed_attempt_pw} times.
+                        Please wait {pw_delay_in_minute} minutes before trying again.
+
+                        """
+                    )
+                    msg.exec()
+                    QTimer.singleShot(pw_delay,lambda : self.password_input.setEnabled(True))
+                elif (failed_attempt_pw // 3) == 1 :
+                    self.otp_input.setEnabled(False)
+                    msg.setWindowTitle("Please Try Again Later")
+                    msg.setText(
+                        f"""
+                        You’ve entered the wrong password {failed_attempt_pw} times.
+                        Please wait {pw_delay_in_minute} minutes before trying again.
+
+                        """
+                    )
+                    msg.exec()
+                    QTimer.singleShot(pw_delay,lambda : self.password_input.setEnabled(True))
+                else : 
+                    msg.setWindowTitle("Please Try Again Later")
+                    msg.setText(
+                        f"""
+                        You’ve entered the wrong password {failed_attempt_pw} times.
+                        Please wait {pw_delay_in_minute} minutes before trying again.
+
+                        """
+                    )
+                    msg.exec()
         else :
             msg.setWindowTitle("Invalid Information")
             msg.setIcon(QMessageBox.Icon.Warning)
@@ -123,6 +126,10 @@ class VerifyOTP(QDialog) :
         self.password = password
         self.gmail = gmail
     def Verify(self) :
+        msg = QMessageBox()
+        failed_attempt_otp = 0
+        otp_delay = 180000
+        otp_delay_in_minute = 3
         if self.otp_input.text() == self.otp :
             msg = QMessageBox()
             msg.setWindowTitle("Login successfully!")
@@ -132,6 +139,44 @@ class VerifyOTP(QDialog) :
             self.close()
             main = MainPage(self.username,self.password,self.gmail)
             main.show()
+        else :
+            failed_attempt_otp += 1
+            if (failed_attempt_otp // 3) > 1 :
+                self.otp_input.setEnabled(False)
+                otp_delay *= (failed_attempt_otp // 3)
+                otp_delay_in_minute *= (failed_attempt_otp // 3)
+                msg.setWindowTitle("Please Try Again Later")
+                msg.setText(
+                    f"""
+                    You’ve entered the wrong OTP {failed_attempt_otp} times.
+                    Please wait {otp_delay_in_minute} minutes before trying again.
+
+                    """
+                )
+                msg.exec()
+                QTimer.singleShot(otp_delay,lambda : self.otp_input.setEnabled(True))
+            elif (failed_attempt_otp // 3) == 1 :
+                self.otp_input.setEnabled(False)
+                msg.setWindowTitle("Please Try Again Later")
+                msg.setText(
+                    f"""
+                    You’ve entered the wrong OTP {failed_attempt_otp} times.
+                    Please wait {otp_delay_in_minute} minutes before trying again.
+
+                    """
+                )
+                msg.exec()
+                QTimer.singleShot(otp_delay,lambda : self.otp_input.setEnabled(True))
+            else : 
+                msg.setWindowTitle("Please Try Again Later")
+                msg.setText(
+                    f"""
+                    You’ve entered the wrong OTP {failed_attempt_otp} times.
+                    Please wait {otp_delay_in_minute} minutes before trying again.
+
+                    """
+                )
+                msg.exec()
 class RegisterPage(QMainWindow) :
     def __init__(self): 
         super().__init__()
