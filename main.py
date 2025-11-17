@@ -94,8 +94,6 @@ class LoginPage(QMainWindow) :
                     msg.setText(
                         f"""
                         You’ve entered the wrong password {failed_attempt_pw} times.
-                        Please wait {pw_delay_in_minute} minutes before trying again.
-
                         """
                     )
                     msg.exec()
@@ -172,8 +170,6 @@ class VerifyOTP(QDialog) :
                 msg.setText(
                     f"""
                     You’ve entered the wrong OTP {failed_attempt_otp} times.
-                    Please wait {otp_delay_in_minute} minutes before trying again.
-
                     """
                 )
                 msg.exec()
