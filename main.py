@@ -1,184 +1,197 @@
-#load các thư viện cần thiết
-from PyQt6.QtWidgets import QMainWindow, QApplication, QMessageBox, QWidget, QLineEdit, QDialog, QGridLayout
+# main_fixed.py
+import os
+import sys
+import string
+import bcrypt
+from PyQt6 import uic
+from PyQt6.QtWidgets import (
+    QMainWindow, QApplication, QMessageBox, QWidget, QLineEdit, QDialog, QGridLayout
+)
 from PyQt6.QtGui import QIcon, QCursor
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6 import uic  
-import string
-import sys 
-import bcrypt
-import os
-#load module xử lí biến, thông tin, hiển thị
+
+# your modules (unchanged)
 from texts import quotes
-from userdata_iO import load_data, save_data  
+from userdata_iO import load_data, save_data
 from quotes_random import randomquotes
 from video_loader import VideoLoader
 from smtp import generate_otp, send_otp
-#tạo hằng số file json
-class LoginPage(QMainWindow) :
-    def __init__(self,):
+
+
+class LoginPage(QMainWindow):
+    def __init__(self):
         super().__init__()
         base_dir = os.path.dirname(__file__)
         ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_LoginPage.ui")
-        uic.loadUi(ui_path,self)
-        self.loginbutton.clicked.connect(self.Login) # signal and slots
-        self.loginbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor)) #chỉnh con trỏ chuột khi chạm nút
+        uic.loadUi(ui_path, self)
+
+        # UI connections
+        self.loginbutton.clicked.connect(self.Login)
+        self.loginbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.movetoregister.clicked.connect(self.OpenRegister)
         self.movetoregister.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.showhidepwbutton.clicked.connect(self.ShowPassword)
         self.showhidepwbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.showhidepwbutton.setIcon(QIcon("gui/showpassword.png"))
-        self.statusBar().hide() # ẩn status bar
-        self.setWindowTitle("TrainAnywhere") # đặt title cho cửa sổ
+
+        self.statusBar().hide()
+        self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
 
-                    
-    def Login(self) :
+        # Lockout/attempt tracking (persist for this running instance)
+        # structure: {'username': {'pw_attempts': int, 'otp_attempts': int, 'lock_until_ms': int}}
+        self.attempts = {}
+
+    def _ensure_user_entry(self, username):
+        if username not in self.attempts:
+            self.attempts[username] = {'pw_attempts': 0, 'otp_attempts': 0, 'pw_locked_until': 0}
+
+    def Login(self):
         msg = QMessageBox()
-        username = self.username_input.text()
+        username = self.username_input.text().strip()
         password = self.password_input.text()
-        
-        failed_attempt_pw = 0
-        pw_delay = 180000
-        pw_delay_in_minute = 3
-        
-        data = load_data() # load json file vào biến data
-        if username in data :
-            stored_hash = data[username]["password"] #lấy mật khẩu đã hash từ data
-            if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')): #so sánh 
-                if data[username]["gmail"] != None :
-                    self.otp = generate_otp()
-                    send_otp(data[username]["gmail"],username,self.otp)
-                    msg.setWindowTitle("Your OTP code")
-                    msg.setIcon(QMessageBox.Icon.Information)
-                    msg.setText("Your OTP code has been sent to your gmail! ")
-                    msg.exec()
-                    verify = VerifyOTP(self.otp,username,password,data[username]["gmail"])
-                else : 
-                    msg.setWindowTitle("Login successfully!")
-                    msg.setIcon(QMessageBox.Icon.Information)
-                    msg.setText("Login successfully! Enjoy your training time!")
-                    msg.exec()
-                    main = MainPage(username,password,None)
-                    self.close()
-                    main.show()
-            else :
-                failed_attempt_pw += 1
-                if (failed_attempt_pw // 3) > 1 :
-                    self.password_input.setEnabled(False)
-                    pw_delay *= (failed_attempt_pw // 3)
-                    pw_delay_in_minute *= (failed_attempt_pw // 3)
-                    msg.setWindowTitle("Please Try Again Later")
-                    msg.setText(
-                        f"""
-                        You’ve entered the wrong password {failed_attempt_pw} times.
-                        Please wait {pw_delay_in_minute} minutes before trying again.
 
-                        """
-                    )
-                    msg.exec()
-                    QTimer.singleShot(pw_delay,lambda : self.password_input.setEnabled(True))
-                elif (failed_attempt_pw // 3) == 1 :
-                    self.otp_input.setEnabled(False)
-                    msg.setWindowTitle("Please Try Again Later")
-                    msg.setText(
-                        f"""
-                        You’ve entered the wrong password {failed_attempt_pw} times.
-                        Please wait {pw_delay_in_minute} minutes before trying again.
+        if username == "":
+            msg.setWindowTitle("Invalid Information")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("Please enter username.")
+            msg.exec()
+            return
 
-                        """
-                    )
-                    msg.exec()
-                    QTimer.singleShot(pw_delay,lambda : self.password_input.setEnabled(True))
-                else : 
-                    msg.setWindowTitle("Please Try Again Later")
-                    msg.setText(
-                        f"""
-                        You’ve entered the wrong password {failed_attempt_pw} times.
-                        """
-                    )
-                    msg.exec()
-        else :
+        self._ensure_user_entry(username)
+        data = load_data()
+        if username not in data:
             msg.setWindowTitle("Invalid Information")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("Wrong username!")
             msg.exec()
-    def ShowPassword(self) :
-        if self.password_input.echoMode() == QLineEdit.EchoMode.Password :
-            self.showhidepwbutton.setIcon(QIcon("gui/hidepassword.png")) # thay đổi icon của nút hiện password
-            self.password_input.setEchoMode(QLineEdit.EchoMode.Normal) # thay đổi echo của dòng nhập mật khẩu để hiển thị 
-        else :
+            return
+
+        # pw lock check: here we use simple timer using QTimer; check if pw_input is disabled or lock timestamp
+        # (for more robust cross-run lockouts you'd persist to disk)
+        stored_hash = data[username]["password"]
+        # check password
+        if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+            # reset attempts on success
+            self.attempts[username]['pw_attempts'] = 0
+
+            gmail = data[username].get("gmail")
+            if gmail:
+                self.otp = generate_otp()
+                try:
+                    send_otp(gmail, username, self.otp)
+                except Exception as e:
+                    msg.setWindowTitle("OTP Error")
+                    msg.setIcon(QMessageBox.Icon.Critical)
+                    msg.setText(f"Failed to send OTP: {e}")
+                    msg.exec()
+                    return
+
+                msg.setWindowTitle("Your OTP code")
+                msg.setIcon(QMessageBox.Icon.Information)
+                msg.setText("Your OTP code has been sent to your gmail!")
+                msg.exec()
+                # show verify dialog modally
+                verify = VerifyOTP(self.otp, username, password, gmail, parent=self)
+                verify.exec()
+                # VerifyOTP will open MainPage on success
+            else:
+                msg.setWindowTitle("Login successfully!")
+                msg.setIcon(QMessageBox.Icon.Information)
+                msg.setText("Login successfully! Enjoy your training time!")
+                msg.exec()
+                main = MainPage(username, password, None)
+                self.close()
+                main.show()
+        else:
+            # wrong password -> increment attempt count and handle lock
+            self.attempts[username]['pw_attempts'] += 1
+            failed = self.attempts[username]['pw_attempts']
+            # every 3 wrong attempts -> disable for 3 minutes * multiplier
+            if failed % 3 == 0:
+                multiplier = failed // 3
+                pw_delay_ms = 180000 * multiplier  # 3 minutes * multiplier
+                minutes = 3 * multiplier
+                msg.setWindowTitle("Please Try Again Later")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setText(
+                    f"You’ve entered the wrong password {failed} times.\n"
+                    f"Please wait {minutes} minutes before trying again."
+                )
+                msg.exec()
+                self.password_input.setEnabled(False)
+                QTimer.singleShot(pw_delay_ms, lambda: self.password_input.setEnabled(True))
+            else:
+                msg.setWindowTitle("Invalid Password")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setText(f"You’ve entered the wrong password {failed} times.")
+                msg.exec()
+
+    def ShowPassword(self):
+        if self.password_input.echoMode() == QLineEdit.EchoMode.Password:
+            self.showhidepwbutton.setIcon(QIcon("gui/hidepassword.png"))
+            self.password_input.setEchoMode(QLineEdit.EchoMode.Normal)
+        else:
             self.showhidepwbutton.setIcon(QIcon("gui/showpassword.png"))
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-    def OpenRegister(self) :
-        self.close() # đóng login
-        register.show() # mở register
-class VerifyOTP(QDialog) :
-    def __init__(self,otpcode,username,password,gmail):
-        super().__init__()
+
+    def OpenRegister(self):
+        self.close()
+        register.show()
+
+
+class VerifyOTP(QDialog):
+    def __init__(self, otpcode, username, password, gmail, parent=None):
+        super().__init__(parent)
         base_dir = os.path.dirname(__file__)
         ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_VerifyOTP.ui")
-        uic.loadUi(ui_path,self)
+        uic.loadUi(ui_path, self)
         self.otp = otpcode
         self.verifybutton.clicked.connect(self.Verify)
         self.username = username
         self.password = password
         self.gmail = gmail
-    def Verify(self) :
+        # per-dialog attempt counter
+        self.failed_attempt_otp = 0
+
+    def Verify(self):
         msg = QMessageBox()
-        failed_attempt_otp = 0
-        otp_delay = 180000
-        otp_delay_in_minute = 3
-        if self.otp_input.text() == self.otp :
-            msg = QMessageBox()
+        user_input = self.otp_input.text().strip()
+        if user_input == self.otp:
             msg.setWindowTitle("Login successfully!")
             msg.setText("Correct OTP code! Login Successfully! Enjoy your training time!")
             msg.setIcon(QMessageBox.Icon.Information)
             msg.exec()
-            self.close()
-            main = MainPage(self.username,self.password,self.gmail)
+            self.accept()  # close dialog with success
+            main = MainPage(self.username, self.password, self.gmail)
             main.show()
-        else :
-            failed_attempt_otp += 1
-            if (failed_attempt_otp // 3) > 1 :
+        else:
+            self.failed_attempt_otp += 1
+            failed = self.failed_attempt_otp
+            if failed % 3 == 0:
+                multiplier = failed // 3
+                otp_delay_ms = 180000 * multiplier
+                minutes = 3 * multiplier
+                msg.setWindowTitle("Please Try Again Later")
+                msg.setText(
+                    f"You’ve entered the wrong OTP {failed} times.\n"
+                    f"Please wait {minutes} minutes before trying again."
+                )
+                msg.exec()
                 self.otp_input.setEnabled(False)
-                otp_delay *= (failed_attempt_otp // 3)
-                otp_delay_in_minute *= (failed_attempt_otp // 3)
-                msg.setWindowTitle("Please Try Again Later")
-                msg.setText(
-                    f"""
-                    You’ve entered the wrong OTP {failed_attempt_otp} times.
-                    Please wait {otp_delay_in_minute} minutes before trying again.
+                QTimer.singleShot(otp_delay_ms, lambda: self.otp_input.setEnabled(True))
+            else:
+                msg.setWindowTitle("Invalid OTP")
+                msg.setText(f"You’ve entered the wrong OTP {failed} times.")
+                msg.exec()
 
-                    """
-                )
-                msg.exec()
-                QTimer.singleShot(otp_delay,lambda : self.otp_input.setEnabled(True))
-            elif (failed_attempt_otp // 3) == 1 :
-                self.otp_input.setEnabled(False)
-                msg.setWindowTitle("Please Try Again Later")
-                msg.setText(
-                    f"""
-                    You’ve entered the wrong OTP {failed_attempt_otp} times.
-                    Please wait {otp_delay_in_minute} minutes before trying again.
 
-                    """
-                )
-                msg.exec()
-                QTimer.singleShot(otp_delay,lambda : self.otp_input.setEnabled(True))
-            else : 
-                msg.setWindowTitle("Please Try Again Later")
-                msg.setText(
-                    f"""
-                    You’ve entered the wrong OTP {failed_attempt_otp} times.
-                    """
-                )
-                msg.exec()
-class RegisterPage(QMainWindow) :
-    def __init__(self): 
+class RegisterPage(QMainWindow):
+    def __init__(self):
         super().__init__()
         base_dir = os.path.dirname(__file__)
         ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_RegisterPage.ui")
-        uic.loadUi(ui_path,self)
+        uic.loadUi(ui_path, self)
         self.registerbutton.clicked.connect(self.SaveNewUser)
         self.registerbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.movetologin.clicked.connect(self.OpenLogin)
@@ -189,21 +202,25 @@ class RegisterPage(QMainWindow) :
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
         self.statusBar().hide()
-    def OpenLogin(self) :
-        self.close() # đóng register 
-        login.show() # mở login
+
+    def OpenLogin(self):
+        self.close()
+        login.show()
+
     def SaveNewUser(self):
         msg = QMessageBox()
-        username = self.usernameinput.text()
+        username = self.usernameinput.text().strip()
         password = self.password_input.text()
-        gmail = str(self.gmail_input.text())
+        gmail = str(self.gmail_input.text()).strip().lower()
         data = load_data()
 
-        special_chars = "!@#$%^&*()_+-={[}]|\\:;\"'<>,.?/~`"
-        if username == "" :
+        if username == "":
             msg.setWindowTitle("Registration failed")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("Please enter username!")
+            msg.exec()
+            return
+
         if username in data:
             msg.setWindowTitle("Registration Failed")
             msg.setIcon(QMessageBox.Icon.Warning)
@@ -218,28 +235,31 @@ class RegisterPage(QMainWindow) :
             msg.exec()
             return
 
+        special_chars = "!@#$%^&*()_+-={[}]|\\:;\"'<>,.?/~`"
         has_letter = any(c in string.ascii_letters for c in password)
         has_digit = any(c in string.digits for c in password)
         has_special = any(c in special_chars for c in password)
-
         if not (has_letter and has_digit and has_special):
             msg.setWindowTitle("Invalid Password")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("Password must contain letters, numbers, and special characters.")
             msg.exec()
             return
-        
-        for stored_username in data.values() :
-            if stored_username["gmail"] == gmail :
-                msg.setWindowTitle("Invalid gmail")
-                msg.setIcon(QMessageBox.Icon.Warning)
-                msg.setText("Gmail already exists.")
-                msg.exec()
-                return
+
+        # gmail uniqueness check (only if non-empty)
+        if gmail != "":
+            for stored in data.values():
+                if stored.get("gmail") == gmail:
+                    msg.setWindowTitle("Invalid gmail")
+                    msg.setIcon(QMessageBox.Icon.Warning)
+                    msg.setText("Gmail already exists.")
+                    msg.exec()
+                    return
+
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         data[username] = {
             "password": hashed_password.decode('utf-8'),
-            "gmail" : gmail.lower()
+            "gmail": gmail if gmail != "" else None
         }
         save_data(data)
         msg.setWindowTitle("Register Success")
@@ -248,21 +268,25 @@ class RegisterPage(QMainWindow) :
         msg.exec()
         self.OpenLogin()
 
-    def ShowPassword(self) :
-        if self.password_input.echoMode() == QLineEdit.EchoMode.Password :
+    def ShowPassword(self):
+        if self.password_input.echoMode() == QLineEdit.EchoMode.Password:
             self.showhidepwbutton.setIcon(QIcon("gui/hidepassword.png"))
             self.password_input.setEchoMode(QLineEdit.EchoMode.Normal)
-        else :
+        else:
             self.showhidepwbutton.setIcon(QIcon("gui/showpassword.png"))
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-class MainPage(QMainWindow) :
-    def __init__(self,username,password,gmail):
+
+
+class MainPage(QMainWindow):
+    def __init__(self, username, password, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_MainPage.ui",self)
+        base_dir = os.path.dirname(__file__)
+        ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_MainPage.ui")
+        uic.loadUi(ui_path, self)
         self.username = username
         self.password = password
         self.gmail = gmail
-        self.stackedWidget.setCurrentIndex(1) # đặt page của stackedWidget = 1 ( page giữa )
+        self.stackedWidget.setCurrentIndex(1)
         self.SwitchToNutritions.clicked.connect(self.NutritionsPage)
         self.SwitchToNutritions.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.SwitchToWorkout.clicked.connect(self.WorkoutPage)
@@ -274,57 +298,56 @@ class MainPage(QMainWindow) :
         self.gymmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.calisthenicsmodebutton.clicked.connect(self.CalisthenicsMode)
         self.calisthenicsmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.username_show.setText(username) # đặt văn bản cho label username_show bằng biến username ( được truyền vào ở login )
+        # show username and a quote
+        self.username_show.setText(username)
         self.quotes.setText(f"'{randomquotes(quotes)}'")
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
         self.statusBar().hide()
-    def GymMode(self) :
+
+    def GymMode(self):
         self.stackedWidget.setCurrentIndex(3)
-       # Tạo Grid layout để bỏ vào GridWidget
+        # create grid layout in the scroll area contents
         self.grid_layout = QGridLayout(self.scrollAreaWidgetContents)
-        # Load tất cả bài tập
-        video_folder = "C:/Users/LENOVO/Downloads/code/Python/PTI08/Final_Project/GymVideos"  # Thư mục chứa bài tập phân nhóm
+        video_folder = os.path.join(os.path.dirname(__file__), "GymVideos")
         loader = VideoLoader(video_folder, self.grid_layout)
         loader.load_exercises()
-        # loader.load_exercises()
 
     def CalisthenicsMode(self):
-        self.stackedWidget.setCurrentIndex(4)  # Đảm bảo chuyển đến đúng trang Calis
-
-        # Xóa layout cũ nếu có
+        self.stackedWidget.setCurrentIndex(4)
         old_layout = self.scrollAreaWidgetContents_2.layout()
         if old_layout is not None:
             while old_layout.count():
                 child = old_layout.takeAt(0)
                 if child.widget():
                     child.widget().deleteLater()
-        # Xóa layout khỏi widget
             QWidget().setLayout(old_layout)
-
-    # Gán layout mới
         self.grid_layout = QGridLayout()
         self.scrollAreaWidgetContents_2.setLayout(self.grid_layout)
-
-    # Load video
-        video_folder = "C:/Users/LENOVO/Downloads/code/Python/PTI08/Final_Project/Calis Videos"
+        video_folder = os.path.join(os.path.dirname(__file__), "Calis Videos")
         loader = VideoLoader(video_folder, self.grid_layout)
         loader.load_exercises()
 
-    def NutritionsPage(self) :
-        self.stackedWidget.setCurrentIndex(2) # chuyển page khi ấn nút
-    def WorkoutPage(self) :
+    def NutritionsPage(self):
+        self.stackedWidget.setCurrentIndex(2)
+
+    def WorkoutPage(self):
         self.stackedWidget.setCurrentIndex(0)
-    def HomePage(self) :
+
+    def HomePage(self):
         self.stackedWidget.setCurrentIndex(1)
-    def Settings(self) :
-        self.settingspage = Settings(self.username,self.password,)
+
+    def Settings(self):
+        # pass three args (username, password, gmail)
+        self.settingspage = Settings(self.username, self.password, self.gmail)
         self.settingspage.show()
         self.close()
-class Settings(QDialog) :
-    def __init__(self,username,password,gmail):
+
+
+class Settings(QDialog):
+    def __init__(self, username, password, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_SettingsPage.ui",self)
+        uic.loadUi("gui/Final_Project_PTI08_SettingsPage.ui", self)
         self.username = username
         self.password = password
         self.gmail = gmail
@@ -335,152 +358,187 @@ class Settings(QDialog) :
         self.editbutton_3.clicked.connect(self.EditGmail)
         self.editbutton_3.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.username_exist.setText(username)
-        self.password_exist.setText(password)
-        self.gmail_exist.setText(gmail)
+        # DO NOT show plaintext password in UI; show masked
+        self.password_exist.setText("•" * 8)
+        self.gmail_exist.setText(gmail if gmail else "Not set")
         self.gobackbutton.clicked.connect(self.GoBackHome)
         self.gobackbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.logoutbutton.clicked.connect(self.LogOut)
         self.logoutbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
-    def LogOut(self) :
+
+    def LogOut(self):
         self.movetologin = LoginPage()
         self.movetologin.show()
         self.close()
-    def GoBackHome(self) :
+
+    def GoBackHome(self):
         self.close()
-        self.mainpage = MainPage(self.username,self.password)
+        self.mainpage = MainPage(self.username, self.password, self.gmail)
         self.mainpage.show()
-    def EditUsername(self) :
-        self.editusername = EditUsername(self.username,self.password,self.gmail)
+
+    def EditUsername(self):
+        self.editusername = EditUsername(self.username, self.password, self.gmail)
         self.close()
         self.editusername.show()
-    def EditPassword(self) :
-        self.editpassword = EditPassword(self.password,self.username,self.gmail)
+
+    def EditPassword(self):
+        self.editpassword = EditPassword(self.password, self.username, self.gmail)
         self.close()
         self.editpassword.show()
-    def EditGmail(self) :
-        self.editgmail = EditGmail(self.username,self.password,self.gmail)
+
+    def EditGmail(self):
+        self.editgmail = EditGmail(self.password, self.username, self.gmail)
         self.close()
         self.editgmail.show()
-class EditUsername(QDialog) :
-    def __init__(self,username,password,gmail):
+
+
+class EditUsername(QDialog):
+    def __init__(self, username, password, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_EditUsernamePage.ui",self)
+        uic.loadUi("gui/Final_Project_PTI08_EditUsernamePage.ui", self)
         self.username = username
         self.password = password
         self.gmail = gmail
         self.username_exist.setText(username)
-        if self.username_input.text() == "" :
-            self.savebutton_username.setStyleSheet("color:#D3D3D3;font:20pt;")
-        else :
-            self.savebutton_username.setStyleSheet("color:white;font:20pt")
+        # update save button state when user types
+        self.username_input.textChanged.connect(self._update_save_state)
         self.savebutton_username.clicked.connect(self.SaveDataCheck)
         self.savebutton_username.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.cancelbutton_username.clicked.connect(self.GoBackToSettings)
         self.cancelbutton_username.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
-    def GoBackToSettings(self) :
-        self.gobacksettings = Settings(self.username,self.password,self.gmail)
+        self._update_save_state()
+
+    def _update_save_state(self):
+        if self.username_input.text().strip() == "":
+            self.savebutton_username.setStyleSheet("color:#D3D3D3;font:20pt;")
+            self.savebutton_username.setEnabled(False)
+        else:
+            self.savebutton_username.setStyleSheet("color:white;font:20pt")
+            self.savebutton_username.setEnabled(True)
+
+    def GoBackToSettings(self):
+        self.gobacksettings = Settings(self.username, self.password, self.gmail)
         self.gobacksettings.show()
         self.close()
-    def SaveDataCheck(self) :
+
+    def SaveDataCheck(self):
         msg = QMessageBox()
         data = load_data()
-        newusername = self.username_input.text()
-        if newusername == "" :
+        newusername = self.username_input.text().strip()
+        if newusername == "":
             msg.setWindowTitle("Invalid New Username")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("New username can't be blank")
             msg.exec()
-        elif newusername == self.username :
+            return
+        if newusername == self.username:
             msg.setWindowTitle("Invalid New Username")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("New username can't be same as current username!")
             msg.exec()
-        elif newusername in data :
+            return
+        if newusername in data:
             msg.setWindowTitle("Invalid New Username")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("New username is already taken, please choose another name")
             msg.exec()
-        else :
-            for stored_username in data :
-                if stored_username == self.username :
-                    data[newusername] = data[self.username]
-                    del data[self.username]
-                    break
-            save_data(data)
-            msg.setWindowTitle("Username Changed")
-            msg.setIcon(QMessageBox.Icon.Information)
-            msg.setText(f"Username changed to '{newusername}' successfully.")
-            msg.exec()
-            self.mainpage = MainPage(newusername,self.password,self.gmail)
-            self.mainpage.show()
-            self.close()
-class EditPassword(QDialog) :
-    def __init__(self,password,username,gmail):
+            return
+        # perform rename
+        data[newusername] = data[self.username]
+        del data[self.username]
+        save_data(data)
+        msg.setWindowTitle("Username Changed")
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setText(f"Username changed to '{newusername}' successfully.")
+        msg.exec()
+        self.mainpage = MainPage(newusername, self.password, self.gmail)
+        self.mainpage.show()
+        self.close()
+
+
+class EditPassword(QDialog):
+    def __init__(self, password, username, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_EditPasswordPage.ui",self)
-        self.password_exist.setText(password)
+        uic.loadUi("gui/Final_Project_PTI08_EditPasswordPage.ui", self)
         self.username = username
         self.password = password
         self.gmail = gmail
-        if self.password_input.text() == "" :
-            self.savebutton_password.setStyleSheet("color:#D3D3D3;font:20pt;")
-        else :
-            self.savebutton_password.setStyleSheet("color:white;font:20pt")
+        self.password_exist.setText("•" * 8)
+        self.password_input.textChanged.connect(self._update_save_state)
         self.savebutton_password.clicked.connect(self.SaveDataCheck)
         self.savebutton_password.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.cancelbutton_password.clicked.connect(self.GoBackSettings)
         self.cancelbutton_password.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
-    def GoBackSettings(self) :
-        self.gobacksettings = Settings(self.username,self.password,self.gmail)
+        self._update_save_state()
+
+    def _update_save_state(self):
+        if self.password_input.text().strip() == "":
+            self.savebutton_password.setStyleSheet("color:#D3D3D3;font:20pt;")
+            self.savebutton_password.setEnabled(False)
+        else:
+            self.savebutton_password.setStyleSheet("color:white;font:20pt")
+            self.savebutton_password.setEnabled(True)
+
+    def GoBackSettings(self):
+        self.gobacksettings = Settings(self.username, self.password, self.gmail)
         self.gobacksettings.show()
         self.close()
-    def SaveDataCheck(self) :
+
+    def SaveDataCheck(self):
         msg = QMessageBox()
         data = load_data()
         newpassword = self.password_input.text()
-        if newpassword == "" :
+        if newpassword == "":
             msg.setWindowTitle("Invalid New Password")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("New password can't be blank")
             msg.exec()
-        elif newpassword == self.password :
+            return
+        if newpassword == self.password:
             msg.setWindowTitle("Invalid New Password")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("New password can't be same as current password!")
             msg.exec()
-        else :
-            for stored_username in data :
-                if stored_username == self.username :
-                    hashed_password = bcrypt.hashpw(newpassword.encode('utf-8'), bcrypt.gensalt())
-                    data[self.username]["password"] = hashed_password.decode('utf-8')
-                    break
-            save_data(data)
-            msg.setWindowTitle("Password Changed")
-            msg.setIcon(QMessageBox.Icon.Information)
-            msg.setText(f"Password changed to '{newpassword}' successfully.")
-            msg.exec()
-            self.settings = MainPage(self.username, newpassword, self.gmail)
-            self.settings.show()
-            self.close()
-class EditGmail(QDialog) :
-    def __init__(self,password,username,gmail):
+            return
+        # hash and save
+        hashed_password = bcrypt.hashpw(newpassword.encode('utf-8'), bcrypt.gensalt())
+        data[self.username]["password"] = hashed_password.decode('utf-8')
+        save_data(data)
+        msg.setWindowTitle("Password Changed")
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setText("Password changed successfully.")
+        msg.exec()
+        # show settings/main with new password masked
+        self.settings = MainPage(self.username, newpassword, self.gmail)
+        self.settings.show()
+        self.close()
+
+
+def validate_gmail_domain(address: str):
+    """Return True if address looks like a gmail address."""
+    address = address.strip().lower()
+    if "@" not in address:
+        return False
+    local, domain = address.rsplit("@", 1)
+    return domain in ("gmail.com", "gmail.com.vn")
+
+
+class EditGmail(QDialog):
+    # signature: (password, username, gmail)
+    def __init__(self, password, username, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_EditGmailPage.ui",self)
-        data = load_data()
-        self.gmail_exist.setText(self.gmail)
+        uic.loadUi("gui/Final_Project_PTI08_EditGmailPage.ui", self)
         self.username = username
         self.password = password
         self.gmail = gmail
-        if self.gmail_input.text() == "" :
-            self.savebutton_gmail.setStyleSheet("color:#D3D3D3;font:20pt;")
-        else :
-            self.savebutton_gmail.setStyleSheet("color:white;font:20pt")
+        self.gmail_exist.setText(gmail if gmail else "Not set")
+        self.gmail_input.textChanged.connect(self._update_save_state)
         self.savebutton_gmail.clicked.connect(self.SaveDataCheck)
         self.savebutton_gmail.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.cancelbutton_gmail.clicked.connect(self.GoBackSettings)
@@ -489,64 +547,84 @@ class EditGmail(QDialog) :
         self.removebutton_gmail.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
-    def GoBackSettings(self) :
-        self.gobacksettings = Settings(self.username,self.password,self.gmail)
+        self._update_save_state()
+
+    def _update_save_state(self):
+        if self.gmail_input.text().strip() == "":
+            self.savebutton_gmail.setStyleSheet("color:#D3D3D3;font:20pt;")
+            self.savebutton_gmail.setEnabled(False)
+        else:
+            self.savebutton_gmail.setStyleSheet("color:white;font:20pt")
+            self.savebutton_gmail.setEnabled(True)
+
+    def GoBackSettings(self):
+        self.gobacksettings = Settings(self.username, self.password, self.gmail)
         self.gobacksettings.show()
         self.close()
-    def SaveDataCheck(self) :
+
+    def SaveDataCheck(self):
         msg = QMessageBox()
         data = load_data()
-        newgmail = self.gmail_input.text()
-        common_domain = [
-        "gmail.com","gmail.com.vn"
-        ]
-        has_domain = any(c in common_domain for c in newgmail)
-        has_atsign = any(c == "@" for c in newgmail)
-        if newgmail == "" :
+        newgmail = self.gmail_input.text().strip().lower()
+        if newgmail == "":
             msg.setWindowTitle("Invalid New Gmail")
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("New gmail can't be blank")
             msg.exec()
-        elif newgmail == data[self.username]["gmail"] :
+            return
+        if newgmail == (data[self.username].get("gmail") or "").lower():
             msg.setWindowTitle("Invalid New Gmail")
             msg.setIcon(QMessageBox.Icon.Warning)
-            msg.setText("New gmail can't be same as current password!")
+            msg.setText("New gmail can't be same as current gmail!")
             msg.exec()
-        elif not(has_domain and has_atsign) :
+            return
+        if not validate_gmail_domain(newgmail):
             msg.setWindowTitle("Invalid new gmail")
             msg.setIcon(QMessageBox.Icon.Warning)
-            msg.setText("New Gmail must contain '@', and 'gmail.com'.")
+            msg.setText("New Gmail must be a valid gmail address (e.g. user@gmail.com).")
             msg.exec()
-        else :
-            for stored_username in data :
-                if stored_username == self.username :
-                    data[self.username]["gmail"] = newgmail
-                    break
-            save_data(data)
-            msg.setWindowTitle("Gmail Changed")
-            msg.setIcon(QMessageBox.Icon.Information)
-            msg.setText(f"Gmail changed to '{newgmail}' successfully.")
-            msg.exec()
-            self.settings = MainPage(self.username, self.password, newgmail)
-            self.settings.show()
-            self.close()
-    def RemoveGmail(self) :
-        msg = QMessageBox()
-        data = load_data()
-        for stored_username in data :
-            if stored_username == self.username :
-                stored_username["gmail"] = None
+            return
+        # check uniqueness
+        for u, record in data.items():
+            if u != self.username and record.get("gmail") and record.get("gmail").lower() == newgmail:
+                msg.setWindowTitle("Invalid Gmail")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setText("This gmail is already used by another account.")
+                msg.exec()
+                return
+        data[self.username]["gmail"] = newgmail
         save_data(data)
-        msg.setWindowTitle("Gmail Removed")
+        msg.setWindowTitle("Gmail Changed")
         msg.setIcon(QMessageBox.Icon.Information)
-        msg.setText("Gmail has been removed successfully!")
+        msg.setText(f"Gmail changed to '{newgmail}' successfully.")
         msg.exec()
-        self.settings = MainPage(self.username, self.password, gmail=None)
+        self.settings = MainPage(self.username, self.password, newgmail)
         self.settings.show()
         self.close()
-if __name__ == "__main__" :
+
+    def RemoveGmail(self):
+        msg = QMessageBox()
+        data = load_data()
+        if self.username in data:
+            data[self.username]["gmail"] = None
+            save_data(data)
+            msg.setWindowTitle("Gmail Removed")
+            msg.setIcon(QMessageBox.Icon.Information)
+            msg.setText("Gmail has been removed successfully!")
+            msg.exec()
+            self.settings = MainPage(self.username, self.password, gmail=None)
+            self.settings.show()
+            self.close()
+        else:
+            msg.setWindowTitle("Error")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("User not found.")
+            msg.exec()
+
+
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     register = RegisterPage()
     login = LoginPage()
     login.show()
-    app.exec()
+    sys.exit(app.exec())
