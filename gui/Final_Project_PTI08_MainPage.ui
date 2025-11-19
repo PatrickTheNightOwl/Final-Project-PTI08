@@ -497,6 +497,25 @@ font:7pt;
                <property name="bottomMargin">
                 <number>0</number>
                </property>
+               <item>
+                <widget class="QPushButton" name="movetochatbot">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">font:40pt;
+font-family:&quot;Bebas Neue&quot;;
+border-radius:15px;
+background-color:white;</string>
+                 </property>
+                 <property name="text">
+                  <string>Open Chatbot</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>

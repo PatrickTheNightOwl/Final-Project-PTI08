@@ -3,6 +3,7 @@ import os
 import sys
 import string
 import bcrypt
+import subprocess
 from PyQt6 import uic
 from PyQt6.QtWidgets import (
     QMainWindow, QApplication, QMessageBox, QWidget, QLineEdit, QDialog, QGridLayout
@@ -298,6 +299,7 @@ class MainPage(QMainWindow):
         self.gymmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.calisthenicsmodebutton.clicked.connect(self.CalisthenicsMode)
         self.calisthenicsmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.movetochatbot.clicked.connect(self.OpenChatbot)
         # show username and a quote
         self.username_show.setText(username)
         self.quotes.setText(f"'{randomquotes(quotes)}'")
@@ -330,6 +332,9 @@ class MainPage(QMainWindow):
 
     def NutritionsPage(self):
         self.stackedWidget.setCurrentIndex(2)
+    
+    def OpenChatbot(self) :
+        subprocess.Popen([sys.executable,"chatbot.py"])
 
     def WorkoutPage(self):
         self.stackedWidget.setCurrentIndex(0)
