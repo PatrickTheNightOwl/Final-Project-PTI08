@@ -260,7 +260,7 @@ class ChatWindow(QMainWindow):
     def __init__(self, api_base="http://127.0.0.1:5000"):
         super().__init__()
         self.setWindowTitle("Contextual Chatbot (Groq) — PyQt6 Client")
-        self.setWindowIcon("gui")
+        self.setWindowIcon("gui/chatbot_icon")
         self.resize(700, 520)
 
         self.api_base = api_base

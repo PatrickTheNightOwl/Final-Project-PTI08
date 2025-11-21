@@ -1,6 +1,6 @@
 {
   "meta": {
-    "updated_at": "2025-11-02T04:40:40Z"
+    "updated_at": "2025-11-19T08:34:14Z"
   },
   "messages": [
     {
@@ -87,6 +87,11 @@
       "role": "assistant",
       "content": "Your name is Tuan DZ.",
       "ts": "2025-11-02T04:40:40Z"
+    },
+    {
+      "role": "system",
+      "content": "You are a helpful, concise assistant.",
+      "ts": "2025-11-19T08:34:14Z"
     }
   ]
 }
