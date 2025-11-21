@@ -393,33 +393,48 @@ class MainPage(QMainWindow):
             traceback.print_exc()
             raise  # re-raise so dev can see it if desired
 
+    # Trong MainPage
     def GymMode(self):
         self.stackedWidget.setCurrentIndex(3)
-        self.grid_layout = QGridLayout(self.scrollAreaWidgetContents)
+        layout = self.scrollAreaWidgetContents.layout()
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            layout = QGridLayout(self.scrollAreaWidgetContents)
+            self.scrollAreaWidgetContents.setLayout(layout)
+
         video_folder = os.path.join(os.path.dirname(__file__), "GymVideos")
-        loader = VideoLoader(video_folder, self.grid_layout)
+        loader = VideoLoader(video_folder, layout)
         loader.load_exercises()
+
 
     def CalisthenicsMode(self):
         self.stackedWidget.setCurrentIndex(4)
-        old_layout = self.scrollAreaWidgetContents_2.layout()
-        if old_layout is not None:
-            while old_layout.count():
-                child = old_layout.takeAt(0)
-                if child.widget():
-                    child.widget().deleteLater()
-            QWidget().setLayout(old_layout)
-        self.grid_layout = QGridLayout()
-        self.scrollAreaWidgetContents_2.setLayout(self.grid_layout)
+        layout = self.scrollAreaWidgetContents_2.layout()
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            layout = QGridLayout(self.scrollAreaWidgetContents_2)
+            self.scrollAreaWidgetContents_2.setLayout(layout)
+
         video_folder = os.path.join(os.path.dirname(__file__), "Calis Videos")
-        loader = VideoLoader(video_folder, self.grid_layout)
+        loader = VideoLoader(video_folder, layout)
         loader.load_exercises()
+
 
     def NutritionsPage(self):
         self.stackedWidget.setCurrentIndex(2)
 
     def OpenChatbot(self):
-        subprocess.Popen([sys.executable, "chatbot.py"])
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        chatbot_path = os.path.join(base_dir, "chatbot.py")
+        subprocess.Popen([sys.executable, chatbot_path])
 
     def WorkoutPage(self):
         self.stackedWidget.setCurrentIndex(0)

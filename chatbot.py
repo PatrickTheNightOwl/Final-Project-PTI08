@@ -27,7 +27,7 @@ from flask import Flask, request, jsonify, make_response
 from dotenv import load_dotenv
 
 # PyQt6
-from PyQt6 import QtCore
+from PyQt6 import QtCore, QtGui
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QTextEdit, QLineEdit, QPushButton,
     QVBoxLayout, QWidget, QLabel, QHBoxLayout
@@ -260,7 +260,7 @@ class ChatWindow(QMainWindow):
     def __init__(self, api_base="http://127.0.0.1:5000"):
         super().__init__()
         self.setWindowTitle("Contextual Chatbot (Groq) — PyQt6 Client")
-        self.setWindowIcon("gui/chatbot_icon")
+        self.setWindowIcon(QtGui.QIcon('gui/chatbot_icon.jpg'))
         self.resize(700, 520)
 
         self.api_base = api_base

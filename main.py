@@ -1,7 +1,8 @@
-# main_fixed.py
+# main_fixed_clean2.py
 import os
 import sys
 import string
+import traceback
 import bcrypt
 import subprocess
 from PyQt6 import uic
@@ -11,7 +12,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIcon, QCursor
 from PyQt6.QtCore import Qt, QTimer
 
-# your modules (unchanged)
+# custom modules (unchanged)
 from texts import quotes
 from userdata_iO import load_data, save_data
 from quotes_random import randomquotes
@@ -19,6 +20,23 @@ from video_loader import VideoLoader
 from smtp import generate_otp, send_otp
 
 
+# ------------------ Helpers ------------------
+def keep_main_ref(window):
+    """Store window on QApplication to prevent GC."""
+    app = QApplication.instance()
+    if app is not None:
+        app.main_window = window
+
+
+def validate_gmail_domain(address: str):
+    address = address.strip().lower()
+    if "@" not in address:
+        return False
+    _, domain = address.rsplit("@", 1)
+    return domain in ("gmail.com", "gmail.com.vn")
+
+
+# ------------------ Login Page ------------------
 class LoginPage(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -26,11 +44,13 @@ class LoginPage(QMainWindow):
         ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_LoginPage.ui")
         uic.loadUi(ui_path, self)
 
-        # UI connections
+        # UI wiring
         self.loginbutton.clicked.connect(self.Login)
         self.loginbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
         self.movetoregister.clicked.connect(self.OpenRegister)
         self.movetoregister.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
         self.showhidepwbutton.clicked.connect(self.ShowPassword)
         self.showhidepwbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.showhidepwbutton.setIcon(QIcon("gui/showpassword.png"))
@@ -39,8 +59,7 @@ class LoginPage(QMainWindow):
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
 
-        # Lockout/attempt tracking (persist for this running instance)
-        # structure: {'username': {'pw_attempts': int, 'otp_attempts': int, 'lock_until_ms': int}}
+        # per-run attempt tracking
         self.attempts = {}
 
     def _ensure_user_entry(self, username):
@@ -60,6 +79,7 @@ class LoginPage(QMainWindow):
             return
 
         self._ensure_user_entry(username)
+
         data = load_data()
         if username not in data:
             msg.setWindowTitle("Invalid Information")
@@ -68,16 +88,15 @@ class LoginPage(QMainWindow):
             msg.exec()
             return
 
-        # pw lock check: here we use simple timer using QTimer; check if pw_input is disabled or lock timestamp
-        # (for more robust cross-run lockouts you'd persist to disk)
         stored_hash = data[username]["password"]
-        # check password
+        # verify password
         if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
-            # reset attempts on success
+            # reset attempts
             self.attempts[username]['pw_attempts'] = 0
 
             gmail = data[username].get("gmail")
             if gmail:
+                # generate and send OTP
                 self.otp = generate_otp()
                 try:
                     send_otp(gmail, username, self.otp)
@@ -88,31 +107,44 @@ class LoginPage(QMainWindow):
                     msg.exec()
                     return
 
-                msg.setWindowTitle("Your OTP code")
+                msg.setWindowTitle("Your OTP Code")
                 msg.setIcon(QMessageBox.Icon.Information)
-                msg.setText("Your OTP code has been sent to your gmail!")
+                msg.setText("OTP sent to your Gmail!")
                 msg.exec()
-                # show verify dialog modally
+
+                # open verify dialog modally and handle result
                 verify = VerifyOTP(self.otp, username, password, gmail, parent=self)
-                verify.exec()
-                # VerifyOTP will open MainPage on success
+                result = verify.exec()
+                # if accepted, VerifyOTP already created and showed main; hide login
+                if result == QDialog.DialogCode.Accepted:
+                    # hide login (do not close to avoid destroying UI parents accidentally)
+                    self.hide()
+                else:
+                    # stay on login; nothing to do
+                    pass
+
             else:
-                msg.setWindowTitle("Login successfully!")
+                msg.setWindowTitle("Login Successful")
                 msg.setIcon(QMessageBox.Icon.Information)
                 msg.setText("Login successfully! Enjoy your training time!")
                 msg.exec()
+
+                # create MainPage, keep reference, show it, then hide login
                 main = MainPage(username, password, None)
-                self.close()
+                keep_main_ref(main)
                 main.show()
+                self.hide()
+
         else:
-            # wrong password -> increment attempt count and handle lock
+            # wrong password handling
             self.attempts[username]['pw_attempts'] += 1
             failed = self.attempts[username]['pw_attempts']
-            # every 3 wrong attempts -> disable for 3 minutes * multiplier
+
             if failed % 3 == 0:
                 multiplier = failed // 3
-                pw_delay_ms = 180000 * multiplier  # 3 minutes * multiplier
+                pw_delay_ms = 180000 * multiplier
                 minutes = 3 * multiplier
+
                 msg.setWindowTitle("Please Try Again Later")
                 msg.setIcon(QMessageBox.Icon.Warning)
                 msg.setText(
@@ -137,76 +169,102 @@ class LoginPage(QMainWindow):
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
     def OpenRegister(self):
-        self.close()
-        register.show()
+        # open the register window created in main block (kept in module-scope)
+        try:
+            register.show()
+            self.hide()
+        except Exception:
+            # fallback: create new
+            r = RegisterPage()
+            r.show()
+            self.hide()
 
 
+# ------------------ Verify OTP ------------------
 class VerifyOTP(QDialog):
     def __init__(self, otpcode, username, password, gmail, parent=None):
         super().__init__(parent)
         base_dir = os.path.dirname(__file__)
         ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_VerifyOTP.ui")
         uic.loadUi(ui_path, self)
+
         self.otp = otpcode
-        self.verifybutton.clicked.connect(self.Verify)
         self.username = username
         self.password = password
         self.gmail = gmail
-        # per-dialog attempt counter
+        self.verifybutton.clicked.connect(self.Verify)
         self.failed_attempt_otp = 0
 
     def Verify(self):
         msg = QMessageBox()
         user_input = self.otp_input.text().strip()
+
         if user_input == self.otp:
-            msg.setWindowTitle("Login successfully!")
-            msg.setText("Correct OTP code! Login Successfully! Enjoy your training time!")
+            msg.setWindowTitle("Login Successful")
             msg.setIcon(QMessageBox.Icon.Information)
+            msg.setText("Correct OTP! Login successfully!")
             msg.exec()
-            self.accept()  # close dialog with success
+
+            # show MainPage BEFORE closing this dialog and keep reference
             main = MainPage(self.username, self.password, self.gmail)
+            keep_main_ref(main)
             main.show()
+
+            # accept/close dialog after main shown
+            self.accept()
         else:
             self.failed_attempt_otp += 1
             failed = self.failed_attempt_otp
+
             if failed % 3 == 0:
                 multiplier = failed // 3
-                otp_delay_ms = 180000 * multiplier
+                delay_ms = 180000 * multiplier
                 minutes = 3 * multiplier
-                msg.setWindowTitle("Please Try Again Later")
+
+                msg.setWindowTitle("Try Again Later")
                 msg.setText(
                     f"You’ve entered the wrong OTP {failed} times.\n"
-                    f"Please wait {minutes} minutes before trying again."
+                    f"Please wait {minutes} minutes before retry."
                 )
                 msg.exec()
                 self.otp_input.setEnabled(False)
-                QTimer.singleShot(otp_delay_ms, lambda: self.otp_input.setEnabled(True))
+                QTimer.singleShot(delay_ms, lambda: self.otp_input.setEnabled(True))
             else:
                 msg.setWindowTitle("Invalid OTP")
                 msg.setText(f"You’ve entered the wrong OTP {failed} times.")
                 msg.exec()
 
 
+# ------------------ Register Page ------------------
 class RegisterPage(QMainWindow):
     def __init__(self):
         super().__init__()
         base_dir = os.path.dirname(__file__)
         ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_RegisterPage.ui")
         uic.loadUi(ui_path, self)
+
         self.registerbutton.clicked.connect(self.SaveNewUser)
         self.registerbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
         self.movetologin.clicked.connect(self.OpenLogin)
         self.movetologin.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
         self.showhidepwbutton.clicked.connect(self.ShowPassword)
         self.showhidepwbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.showhidepwbutton.setIcon(QIcon("gui/showpassword.png"))
+
+        self.statusBar().hide()
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
-        self.statusBar().hide()
 
     def OpenLogin(self):
-        self.close()
-        login.show()
+        try:
+            login.show()
+            self.hide()
+        except Exception:
+            l = LoginPage()
+            l.show()
+            self.hide()
 
     def SaveNewUser(self):
         msg = QMessageBox()
@@ -267,7 +325,15 @@ class RegisterPage(QMainWindow):
         msg.setIcon(QMessageBox.Icon.Information)
         msg.setText("Account registered successfully!")
         msg.exec()
-        self.OpenLogin()
+
+        # after registration go back to login
+        try:
+            login.show()
+            self.hide()
+        except Exception:
+            l = LoginPage()
+            l.show()
+            self.hide()
 
     def ShowPassword(self):
         if self.password_input.echoMode() == QLineEdit.EchoMode.Password:
@@ -278,63 +344,97 @@ class RegisterPage(QMainWindow):
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
 
+# ------------------ Main Page ------------------
 class MainPage(QMainWindow):
     def __init__(self, username, password, gmail):
-        super().__init__()
-        base_dir = os.path.dirname(__file__)
-        ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_MainPage.ui")
-        uic.loadUi(ui_path, self)
-        self.username = username
-        self.password = password
-        self.gmail = gmail
-        self.stackedWidget.setCurrentIndex(1)
-        self.SwitchToNutritions.clicked.connect(self.NutritionsPage)
-        self.SwitchToNutritions.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.SwitchToWorkout.clicked.connect(self.WorkoutPage)
-        self.SwitchToWorkout.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.SwitchToHome.clicked.connect(self.HomePage)
-        self.SwitchToHome.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.settingsbutton.clicked.connect(self.Settings)
-        self.gymmodebutton.clicked.connect(self.GymMode)
-        self.gymmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.calisthenicsmodebutton.clicked.connect(self.CalisthenicsMode)
-        self.calisthenicsmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.movetochatbot.clicked.connect(self.OpenChatbot)
-        # show username and a quote
-        self.username_show.setText(username)
-        self.quotes.setText(f"'{randomquotes(quotes)}'")
-        self.setWindowTitle("TrainAnywhere")
-        self.setWindowIcon(QIcon("gui/decor3.ico"))
-        self.statusBar().hide()
+        # defensive init: capture exceptions and print them (PyQt sometimes swallows them)
+        try:
+            super().__init__()
+            print("MainPage init start")  # debug marker
 
+            base_dir = os.path.dirname(__file__)
+            ui_path = os.path.join(base_dir, "gui", "Final_Project_PTI08_MainPage.ui")
+            uic.loadUi(ui_path, self)
+
+            self.username = username
+            self.password = password
+            self.gmail = gmail
+
+            self.stackedWidget.setCurrentIndex(1)
+
+            self.SwitchToNutritions.clicked.connect(self.NutritionsPage)
+            self.SwitchToNutritions.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+            self.SwitchToWorkout.clicked.connect(self.WorkoutPage)
+            self.SwitchToWorkout.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+            self.SwitchToHome.clicked.connect(self.HomePage)
+            self.SwitchToHome.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+            self.settingsbutton.clicked.connect(self.Settings)
+            self.gymmodebutton.clicked.connect(self.GymMode)
+            self.gymmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+            self.calisthenicsmodebutton.clicked.connect(self.CalisthenicsMode)
+            self.calisthenicsmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+            self.movetochatbot.clicked.connect(self.OpenChatbot)
+
+            self.username_show.setText(username)
+            self.quotes.setText(f"'{randomquotes(quotes)}'")
+
+            self.setWindowTitle("TrainAnywhere")
+            self.setWindowIcon(QIcon("gui/decor3.ico"))
+            self.statusBar().hide()
+
+            print("MainPage init OK")  # debug marker
+        except Exception as e:
+            print("Exception in MainPage.__init__:", e)
+            traceback.print_exc()
+            raise  # re-raise so dev can see it if desired
+
+    # Trong MainPage
     def GymMode(self):
         self.stackedWidget.setCurrentIndex(3)
-        # create grid layout in the scroll area contents
-        self.grid_layout = QGridLayout(self.scrollAreaWidgetContents)
+        layout = self.scrollAreaWidgetContents.layout()
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            layout = QGridLayout(self.scrollAreaWidgetContents)
+            self.scrollAreaWidgetContents.setLayout(layout)
+
         video_folder = os.path.join(os.path.dirname(__file__), "GymVideos")
-        loader = VideoLoader(video_folder, self.grid_layout)
+        loader = VideoLoader(video_folder, layout)
         loader.load_exercises()
+
 
     def CalisthenicsMode(self):
         self.stackedWidget.setCurrentIndex(4)
-        old_layout = self.scrollAreaWidgetContents_2.layout()
-        if old_layout is not None:
-            while old_layout.count():
-                child = old_layout.takeAt(0)
-                if child.widget():
-                    child.widget().deleteLater()
-            QWidget().setLayout(old_layout)
-        self.grid_layout = QGridLayout()
-        self.scrollAreaWidgetContents_2.setLayout(self.grid_layout)
+        layout = self.scrollAreaWidgetContents_2.layout()
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            layout = QGridLayout(self.scrollAreaWidgetContents_2)
+            self.scrollAreaWidgetContents_2.setLayout(layout)
+
         video_folder = os.path.join(os.path.dirname(__file__), "Calis Videos")
-        loader = VideoLoader(video_folder, self.grid_layout)
+        loader = VideoLoader(video_folder, layout)
         loader.load_exercises()
+
 
     def NutritionsPage(self):
         self.stackedWidget.setCurrentIndex(2)
-    
-    def OpenChatbot(self) :
-        subprocess.Popen([sys.executable,"chatbot.py"])
+
+    def OpenChatbot(self):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        chatbot_path = os.path.join(base_dir, "chatbot.py")
+        subprocess.Popen([sys.executable, chatbot_path])
 
     def WorkoutPage(self):
         self.stackedWidget.setCurrentIndex(0)
@@ -343,76 +443,89 @@ class MainPage(QMainWindow):
         self.stackedWidget.setCurrentIndex(1)
 
     def Settings(self):
-        # pass three args (username, password, gmail)
-        self.settingspage = Settings(self.username, self.password, self.gmail)
-        self.settingspage.show()
+        settingspage = Settings(self.username, self.password, self.gmail)
+        # keep reference to avoid GC while settings is open
+        keep_main_ref(settingspage)
+        settingspage.show()
         self.close()
 
 
+# ------------------ Settings & Edits ------------------
 class Settings(QDialog):
     def __init__(self, username, password, gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_SettingsPage.ui", self)
+
         self.username = username
         self.password = password
         self.gmail = gmail
+
         self.editbutton.clicked.connect(self.EditUsername)
         self.editbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.editbutton_2.clicked.connect(self.EditPassword)
         self.editbutton_2.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.editbutton_3.clicked.connect(self.EditGmail)
         self.editbutton_3.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
         self.username_exist.setText(username)
-        # DO NOT show plaintext password in UI; show masked
         self.password_exist.setText("•" * 8)
         self.gmail_exist.setText(gmail if gmail else "Not set")
+
         self.gobackbutton.clicked.connect(self.GoBackHome)
         self.gobackbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.logoutbutton.clicked.connect(self.LogOut)
         self.logoutbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
 
     def LogOut(self):
-        self.movetologin = LoginPage()
-        self.movetologin.show()
+        # show login and close settings
+        try:
+            login.show()
+        except Exception:
+            new_login = LoginPage()
+            new_login.show()
         self.close()
 
     def GoBackHome(self):
+        main = MainPage(self.username, self.password, self.gmail)
+        keep_main_ref(main)
+        main.show()
         self.close()
-        self.mainpage = MainPage(self.username, self.password, self.gmail)
-        self.mainpage.show()
 
     def EditUsername(self):
-        self.editusername = EditUsername(self.username, self.password, self.gmail)
+        edit = EditUsername(self.username, self.password, self.gmail)
+        edit.show()
         self.close()
-        self.editusername.show()
 
     def EditPassword(self):
-        self.editpassword = EditPassword(self.password, self.username, self.gmail)
+        edit = EditPassword(self.password, self.username, self.gmail)
+        edit.show()
         self.close()
-        self.editpassword.show()
 
     def EditGmail(self):
-        self.editgmail = EditGmail(self.password, self.username, self.gmail)
+        edit = EditGmail(self.password, self.username, self.gmail)
+        edit.show()
         self.close()
-        self.editgmail.show()
 
 
 class EditUsername(QDialog):
     def __init__(self, username, password, gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_EditUsernamePage.ui", self)
+
         self.username = username
         self.password = password
         self.gmail = gmail
         self.username_exist.setText(username)
-        # update save button state when user types
+
         self.username_input.textChanged.connect(self._update_save_state)
         self.savebutton_username.clicked.connect(self.SaveDataCheck)
         self.savebutton_username.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.cancelbutton_username.clicked.connect(self.GoBackToSettings)
         self.cancelbutton_username.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
         self.setWindowTitle("TrainAnywhere")
         self.setWindowIcon(QIcon("gui/decor3.ico"))
         self._update_save_state()
@@ -426,8 +539,8 @@ class EditUsername(QDialog):
             self.savebutton_username.setEnabled(True)
 
     def GoBackToSettings(self):
-        self.gobacksettings = Settings(self.username, self.password, self.gmail)
-        self.gobacksettings.show()
+        s = Settings(self.username, self.password, self.gmail)
+        s.show()
         self.close()
 
     def SaveDataCheck(self):
@@ -460,8 +573,9 @@ class EditUsername(QDialog):
         msg.setIcon(QMessageBox.Icon.Information)
         msg.setText(f"Username changed to '{newusername}' successfully.")
         msg.exec()
-        self.mainpage = MainPage(newusername, self.password, self.gmail)
-        self.mainpage.show()
+        main = MainPage(newusername, self.password, self.gmail)
+        keep_main_ref(main)
+        main.show()
         self.close()
 
 
@@ -491,8 +605,8 @@ class EditPassword(QDialog):
             self.savebutton_password.setEnabled(True)
 
     def GoBackSettings(self):
-        self.gobacksettings = Settings(self.username, self.password, self.gmail)
-        self.gobacksettings.show()
+        s = Settings(self.username, self.password, self.gmail)
+        s.show()
         self.close()
 
     def SaveDataCheck(self):
@@ -519,23 +633,13 @@ class EditPassword(QDialog):
         msg.setIcon(QMessageBox.Icon.Information)
         msg.setText("Password changed successfully.")
         msg.exec()
-        # show settings/main with new password masked
-        self.settings = MainPage(self.username, newpassword, self.gmail)
-        self.settings.show()
+        main = MainPage(self.username, newpassword, self.gmail)
+        keep_main_ref(main)
+        main.show()
         self.close()
 
 
-def validate_gmail_domain(address: str):
-    """Return True if address looks like a gmail address."""
-    address = address.strip().lower()
-    if "@" not in address:
-        return False
-    local, domain = address.rsplit("@", 1)
-    return domain in ("gmail.com", "gmail.com.vn")
-
-
 class EditGmail(QDialog):
-    # signature: (password, username, gmail)
     def __init__(self, password, username, gmail):
         super().__init__()
         uic.loadUi("gui/Final_Project_PTI08_EditGmailPage.ui", self)
@@ -563,8 +667,8 @@ class EditGmail(QDialog):
             self.savebutton_gmail.setEnabled(True)
 
     def GoBackSettings(self):
-        self.gobacksettings = Settings(self.username, self.password, self.gmail)
-        self.gobacksettings.show()
+        s = Settings(self.username, self.password, self.gmail)
+        s.show()
         self.close()
 
     def SaveDataCheck(self):
@@ -603,8 +707,9 @@ class EditGmail(QDialog):
         msg.setIcon(QMessageBox.Icon.Information)
         msg.setText(f"Gmail changed to '{newgmail}' successfully.")
         msg.exec()
-        self.settings = MainPage(self.username, self.password, newgmail)
-        self.settings.show()
+        main = MainPage(self.username, self.password, newgmail)
+        keep_main_ref(main)
+        main.show()
         self.close()
 
     def RemoveGmail(self):
@@ -617,8 +722,9 @@ class EditGmail(QDialog):
             msg.setIcon(QMessageBox.Icon.Information)
             msg.setText("Gmail has been removed successfully!")
             msg.exec()
-            self.settings = MainPage(self.username, self.password, gmail=None)
-            self.settings.show()
+            main = MainPage(self.username, self.password, gmail=None)
+            keep_main_ref(main)
+            main.show()
             self.close()
         else:
             msg.setWindowTitle("Error")
@@ -627,9 +733,18 @@ class EditGmail(QDialog):
             msg.exec()
 
 
+# ------------------ Entrypoint ------------------
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # create module-scope windows so we can easily show/hide them later
     register = RegisterPage()
     login = LoginPage()
+
+    # show login
     login.show()
+    # keep reference to top windows so GC won't collect anything important
+    keep_main_ref(login)
+    keep_main_ref(register)
+
     sys.exit(app.exec())
