@@ -383,6 +383,9 @@ class MainPage(QMainWindow):
             self.movetochatbot.clicked.connect(self.OpenChatbot)
             self.movetochatbot.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
+            self.terms_disclaimer.clicked.connect(self.TermsAndDisclaimer)
+            self.terms_disclaimer.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
             self.username_show.setText(username)
             self.quotes.setText(f"'{randomquotes(quotes)}'")
 
@@ -438,6 +441,9 @@ class MainPage(QMainWindow):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         chatbot_path = os.path.join(base_dir, "chatbot.py")
         subprocess.Popen([sys.executable, chatbot_path])
+    
+    def TermsAndDisclaimer(self) :
+        self.stackedWidget.setCurrentIndex(5)
 
     def WorkoutPage(self):
         self.stackedWidget.setCurrentIndex(0)

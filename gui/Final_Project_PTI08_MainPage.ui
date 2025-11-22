@@ -174,7 +174,7 @@
        <string notr="true">background-color:black</string>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="Training_Page">
        <property name="styleSheet">
@@ -481,7 +481,7 @@ font:7pt;
             </property>
             <item>
              <widget class="QWidget" name="widget_2" native="true">
-              <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <layout class="QVBoxLayout" name="verticalLayout_5">
                <property name="spacing">
                 <number>10</number>
                </property>
@@ -497,7 +497,7 @@ font:7pt;
                <property name="bottomMargin">
                 <number>0</number>
                </property>
-               <item>
+               <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
                 <widget class="QPushButton" name="movetochatbot">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -512,7 +512,17 @@ border-radius:15px;
 background-color:white;</string>
                  </property>
                  <property name="text">
-                  <string>Open Chatbot</string>
+                  <string>Open AI Coach</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="terms_disclaimer">
+                 <property name="styleSheet">
+                  <string notr="true">color:white;font-size:13pt;font-family:Bebas Neue;font-weight:bold;text-decoration: underline;</string>
+                 </property>
+                 <property name="text">
+                  <string>AI coach terms and disclaimer</string>
                  </property>
                 </widget>
                </item>
@@ -594,6 +604,63 @@ background-color:white;</string>
          </widget>
         </widget>
        </widget>
+      </widget>
+      <widget class="QWidget" name="Terms_Disclaimer">
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item alignment="Qt::AlignHCenter">
+         <widget class="QLabel" name="Terms_Title">
+          <property name="styleSheet">
+           <string notr="true">color:white;font-size:30pt;font-family:Bebas Neue;font-weight:bold;text-decoration: underline;</string>
+          </property>
+          <property name="text">
+           <string>AI COACH TERMS AND DISCLAIMER</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPlainTextEdit" name="plainTextEdit">
+          <property name="styleSheet">
+           <string notr="true">color:white;font-size:15pt;font-family:Bebas Neue;font-weight:bold;</string>
+          </property>
+          <property name="plainText">
+           <string>1. **Purpose of AI CoACH**
+   The aI COACH is designed to help users with fitness, workouts, nutrition, and general guidance. It is an assistant, not a medical or professional advisor.
+
+2. **User Responsibility**
+
+   * Users must use the AI Coach responsibly and understand that information provided is for educational purposes.
+   * Users are responsible for their own actions when following workout or nutrition advice.
+
+3. **Accuracy of Information**
+
+   * While we aim to provide helpful and accurate guidance, the chatbot may not always be perfect.
+   * The AI COACH may simplify explanations and may not cover every possible scenario.
+
+4. **Prohibited Use**
+
+   * Do not use the AI Coach for illegal, harmful, or abusive purposes.
+   * Do not try to hack, manipulate, or overload the AI COACH system.
+
+5. **Privacy and Data**
+
+   * Chat messages may be stored temporarily to improve the chatbot experience.
+   * Do not share sensitive personal information.
+
+6. **No Guarantees**
+
+   * The AI COACH does not guarantee results, success, or outcomes from following advice.
+   * Users should consult professionals for serious health, fitness, or medical concerns.
+
+7. **Changes to Terms**
+
+   * We may update these terms from time to time. Users are encouraged to review them regularly.
+
+**By using this AI COACH, you agree to follow these terms and use it responsibly.**
+</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>

@@ -132,7 +132,7 @@ padding: 8px;
 font-size: 14px;</string>
           </property>
           <property name="placeholderText">
-           <string>Enter your new username</string>
+           <string>Enter your new gmail</string>
           </property>
          </widget>
         </item>
