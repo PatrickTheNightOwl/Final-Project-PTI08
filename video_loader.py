@@ -4,7 +4,7 @@ import sys
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QStackedWidget, QSizePolicy, QGridLayout
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from texts import guide_gym
+from texts import guide_gym_2
 
 class ExerciseWidget(QWidget):
     def __init__(self, video_path, exercise_name, instructions=None):
@@ -95,8 +95,8 @@ class VideoLoader:
                 # Lấy hướng dẫn từ guide_gym nếu có
                 instructions = f"No guide available for {exercise_name}"
                 try:
-                    if exercise_name in guide_gym:
-                        instructions = f"{guide_gym[exercise_name].get('description', '')} (Tier {guide_gym[exercise_name].get('tier', '?')})"
+                    if exercise_name in guide_gym_2:
+                        instructions = f"{guide_gym_2[exercise_name].get('description', '')} (Tier {guide_gym_2[exercise_name].get('tier', '?')})"
                 except Exception as e:
                     print(f"⚠️ Error fetching guide for {exercise_name}: {e}")
 

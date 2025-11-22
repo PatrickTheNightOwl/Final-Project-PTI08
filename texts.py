@@ -1,39 +1,118 @@
 guide_gym = {
-    "chest supported row": {"tier": "s+"},
-    "half kneeling 1 arm lat pulldown": {"tier": "s"},
-    "meadows row": {"tier": "s"},
-    "neutral grip cable row": {"tier": "s"},
-    "neutral grip lat pulldown": {"tier": "s"},
-    "wide grip lat pulldown": {"tier": "s"},
-    
-    "dumbbell preacher curl": {"tier": "s"},
-    "dumbbell preacher hammer curl": {"tier": "s"},
-    "face away bayesian cable curl": {"tier": "s+"},
-    "machine preacher curl": {"tier": "s"},
-    
-    "machine chest press": {"tier": "s+"},
-    "seated cable pec flye": {"tier": "s"},
-    
-    "behind the back cuffed lateral raise": {"tier": "s"},
-    "cable lateral raise": {"tier": "s+"},
-    "cable y raise": {"tier": "s"},
-    "machine shoulder press": {"tier": "s"},
-    "reverse cable crossover": {"tier": "s"},
-    
-    "dumbbell walking lunge": {"tier": "s+"},
-    "machine hip abduction": {"tier": "s"},
-    "nautilus glute drive": {"tier": "s"},
-    "romanian deadlift": {"tier": "s"},
-    
-    "barbell back squat": {"tier": "s"},
-    "bulgarian split squat": {"tier": "s"},
-    "hack squat": {"tier": "s+"},
-    "pendulum squat": {"tier": "s"},
-    "smith machine squat": {"tier": "s"},
-    
-    "ez bar skullcrusher": {"tier": "s"},
-    "overhead cable triceps extension (bar)": {"tier": "s+"}
+    "chest supported row": {
+        "tier": "s+",
+        "description": "Sit and pull the handles toward your chest. Good for back and lats."
+    },
+    "half kneeling 1 arm lat pulldown": {
+        "tier": "s",
+        "description": "Pull the cable down with one arm while kneeling. Works lats and back."
+    },
+    "meadows row": {
+        "tier": "s",
+        "description": "Lean and row one side. Strong for lower lats and mid-back."
+    },
+    "neutral grip cable row": {
+        "tier": "s",
+        "description": "Pull the cable with palms facing each other. Focus on lats and middle back."
+    },
+    "neutral grip lat pulldown": {
+        "tier": "s",
+        "description": "Pull the bar down with palms facing each other. Hits lats well."
+    },
+    "wide grip lat pulldown": {
+        "tier": "s",
+        "description": "Pull the bar wide down. Works upper lats and back width."
+    },
+    "dumbbell preacher curl": {
+        "tier": "s",
+        "description": "Curl dumbbells on a preacher bench. Isolates the biceps."
+    },
+    "dumbbell preacher hammer curl": {
+        "tier": "s",
+        "description": "Curl dumbbells with palms facing each other. Works biceps and forearms."
+    },
+    "face away bayesian cable curl": {
+        "tier": "s+",
+        "description": "Curl cable while facing away. Keeps tension on biceps all the time."
+    },
+    "machine preacher curl": {
+        "tier": "s",
+        "description": "Use the machine to curl. Focus on biceps without cheating."
+    },
+    "machine chest press": {
+        "tier": "s+",
+        "description": "Push handles away from chest. Works chest, shoulders, triceps."
+    },
+    "seated cable pec flye": {
+        "tier": "s",
+        "description": "Bring cables together in front. Good for chest shape."
+    },
+    "behind the back cuffed lateral raise": {
+        "tier": "s",
+        "description": "Lift dumbbells from behind. Works side shoulders."
+    },
+    "cable lateral raise": {
+        "tier": "s+",
+        "description": "Lift cables to the side. Builds shoulder width."
+    },
+    "cable y raise": {
+        "tier": "s",
+        "description": "Lift cables in Y shape. Works rear and side shoulders."
+    },
+    "machine shoulder press": {
+        "tier": "s",
+        "description": "Push handles overhead on machine. Builds shoulder strength."
+    },
+    "reverse cable crossover": {
+        "tier": "s",
+        "description": "Pull cables back. Focus on rear shoulders and upper back."
+    },
+    "dumbbell walking lunge": {
+        "tier": "s+",
+        "description": "Step forward with dumbbells. Works legs and glutes."
+    },
+    "machine hip abduction": {
+        "tier": "s",
+        "description": "Push legs outward on machine. Works outer hips and glutes."
+    },
+    "nautilus glute drive": {
+        "tier": "s",
+        "description": "Push platform with hips. Strong for glutes."
+    },
+    "romanian deadlift": {
+        "tier": "s",
+        "description": "Lift bar with straight legs. Works hamstrings and lower back."
+    },
+    "barbell back squat": {
+        "tier": "s",
+        "description": "Bar on back, squat down and up. Builds full legs and glutes."
+    },
+    "bulgarian split squat": {
+        "tier": "s",
+        "description": "One leg on bench, squat with other. Strong leg and glute work."
+    },
+    "hack squat": {
+        "tier": "s+",
+        "description": "Squat on machine. Focus on legs safely."
+    },
+    "pendulum squat": {
+        "tier": "s",
+        "description": "Squat on pendulum machine. Hits quads and glutes."
+    },
+    "smith machine squat": {
+        "tier": "s",
+        "description": "Squat on smith machine. Helps form and safety."
+    },
+    "ez bar skullcrusher": {
+        "tier": "s",
+        "description": "Lie and lower bar to forehead. Works triceps."
+    },
+    "overhead cable triceps extension (bar)": {
+        "tier": "s+",
+        "description": "Pull cable overhead. Strong tricep builder."
+    }
 }
+
 
 quotes = [
     "The pain you feel today is the strength you gain tomorrow.",

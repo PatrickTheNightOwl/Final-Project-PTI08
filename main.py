@@ -372,6 +372,8 @@ class MainPage(QMainWindow):
             self.SwitchToHome.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
             self.settingsbutton.clicked.connect(self.Settings)
+            self.settingsbutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
             self.gymmodebutton.clicked.connect(self.GymMode)
             self.gymmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
@@ -379,6 +381,7 @@ class MainPage(QMainWindow):
             self.calisthenicsmodebutton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
             self.movetochatbot.clicked.connect(self.OpenChatbot)
+            self.movetochatbot.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
             self.username_show.setText(username)
             self.quotes.setText(f"'{randomquotes(quotes)}'")
@@ -454,7 +457,9 @@ class MainPage(QMainWindow):
 class Settings(QDialog):
     def __init__(self, username, password, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_SettingsPage.ui", self)
+        base_dir = os.path.dirname(__file__)
+        setting_path = os.path.join(base_dir,"gui","Final_Project_PTI08_SettingsPage.ui")
+        uic.loadUi(setting_path, self)
 
         self.username = username
         self.password = password
@@ -495,25 +500,27 @@ class Settings(QDialog):
         self.close()
 
     def EditUsername(self):
-        edit = EditUsername(self.username, self.password, self.gmail)
-        edit.show()
+        self.edit = EditUsername(self.username, self.password, self.gmail)
+        self.edit.show()
         self.close()
 
     def EditPassword(self):
-        edit = EditPassword(self.password, self.username, self.gmail)
-        edit.show()
+        self.edit = EditPassword(self.password, self.username, self.gmail)
+        self.edit.show()
         self.close()
 
     def EditGmail(self):
-        edit = EditGmail(self.password, self.username, self.gmail)
-        edit.show()
+        self.edit = EditGmail(self.password, self.username, self.gmail)
+        self.edit.show()
         self.close()
 
 
 class EditUsername(QDialog):
     def __init__(self, username, password, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_EditUsernamePage.ui", self)
+        base_dir = os.path.dirname(__file__)
+        editusername_path = os.path.join(base_dir,"gui","Final_Project_PTI08_EditUsernamePage.ui")
+        uic.loadUi(editusername_path, self)
 
         self.username = username
         self.password = password
@@ -582,7 +589,9 @@ class EditUsername(QDialog):
 class EditPassword(QDialog):
     def __init__(self, password, username, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_EditPasswordPage.ui", self)
+        base_dir = os.path.dirname(__file__)
+        editpassword_path = os.path.join(base_dir,"gui","Final_Project_PTI08_EditPasswordPage.ui")
+        uic.loadUi(editpassword_path, self)
         self.username = username
         self.password = password
         self.gmail = gmail
@@ -642,7 +651,9 @@ class EditPassword(QDialog):
 class EditGmail(QDialog):
     def __init__(self, password, username, gmail):
         super().__init__()
-        uic.loadUi("gui/Final_Project_PTI08_EditGmailPage.ui", self)
+        base_dir = os.path.dirname(__file__)
+        editgmail_path = os.path.join(base_dir,"gui","Final_Project_PTI08_EditGmailPage.ui")
+        uic.loadUi(editgmail_path, self)
         self.username = username
         self.password = password
         self.gmail = gmail
